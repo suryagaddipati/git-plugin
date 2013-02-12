@@ -2,6 +2,7 @@ package hudson.plugins.git.util;
 
 import hudson.Extension;
 import hudson.model.TaskListener;
+import hudson.model.AbstractBuild;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.BranchSpec;
 import hudson.plugins.git.GitException;
@@ -16,6 +17,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -111,5 +113,12 @@ public class InverseBuildChooser extends BuildChooser {
     }
 
     private static final long serialVersionUID = 1L;
+
+	@Override
+	public String getSingleBranch(AbstractBuild<?, ?> build,
+			List<BranchSpec> branches, List<RemoteConfig> repositories) {
+		
+		return null;
+	}
 
 }

@@ -4,16 +4,21 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.DescriptorExtensionList;
 import hudson.ExtensionPoint;
 import hudson.model.Describable;
+import hudson.model.AbstractBuild;
 import hudson.model.Hudson;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitSCM;
+import hudson.plugins.git.BranchSpec;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.Revision;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.List;
+
+import org.eclipse.jgit.transport.RemoteConfig;
 
 /**
  * Interface defining an API to choose which revisions ought to be
@@ -127,4 +132,6 @@ public abstract class BuildChooser implements ExtensionPoint, Describable<BuildC
     }
 
     private static final long serialVersionUID = 1L;
+
+	public abstract String getSingleBranch(AbstractBuild<?, ?> build, List<BranchSpec> branches, List<RemoteConfig> repositories) ;
 }

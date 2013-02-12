@@ -1,6 +1,8 @@
 package hudson.plugins.git.util;
 
 import hudson.Extension;
+import hudson.model.AbstractBuild;
+import hudson.model.ParametersAction;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.BranchSpec;
@@ -96,6 +98,52 @@ public class DefaultBuildChooser extends BuildChooser {
         }
 
         return revisions;
+    }
+    
+    
+    /**
+     * If the configuration is such that we are tracking just one branch of one repository
+     * return that branch specifier (in the form of something like "origin/master"
+     *
+     * Otherwise return null.
+     */
+    public  String getSingleBranch(AbstractBuild<?, ?> build, List<BranchSpec> branches, List<RemoteConfig> repositories) {
+        // if we have multiple branches skip to advanced usecase
+        if (branches.size() != 1 || repositories.size() != 1) {
+            return null;
+        }
+
+        String branch = branches.get(0).getName();
+        String repository = repositories.get(0).getName();
+
+        // replace repository wildcard with repository name
+        if (branch.startsWith("*/")) {
+            branch = repository + branch.substring(1);
+        }
+
+        // if the branch name contains more wildcards then the simple usecase
+        // does not apply and we need to skip to the advanced usecase
+        if (branch.contains("*")) {
+            return null;
+        }
+
+        // substitute build parameters if available
+        branch = getParameterString(branch, build);
+
+        // Check for empty string - replace with "**" when seen.
+        if (branch.equals("")) {
+            branch = "**";
+        }
+
+        return branch;
+    }
+    private String getParameterString(String original, AbstractBuild<?, ?> build) {
+        ParametersAction parameters = build.getAction(ParametersAction.class);
+        if (parameters != null) {
+            original = parameters.substitute(build, original);
+        }
+
+        return original;
     }
 
     private Collection<Revision> getHeadRevision(boolean isPollCall, String singleBranch, IGitAPI git, TaskListener listener, BuildData data) {

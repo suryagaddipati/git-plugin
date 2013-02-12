@@ -589,43 +589,7 @@ public class GitSCM extends SCM implements Serializable {
         return getParameterString(refSpec, build);
     }
 
-    /**
-     * If the configuration is such that we are tracking just one branch of one repository
-     * return that branch specifier (in the form of something like "origin/master"
-     *
-     * Otherwise return null.
-     */
-    private String getSingleBranch(AbstractBuild<?, ?> build) {
-        // if we have multiple branches skip to advanced usecase
-        if (getBranches().size() != 1 || getRepositories().size() != 1) {
-            return null;
-        }
-
-        String branch = getBranches().get(0).getName();
-        String repository = getRepositories().get(0).getName();
-
-        // replace repository wildcard with repository name
-        if (branch.startsWith("*/")) {
-            branch = repository + branch.substring(1);
-        }
-
-        // if the branch name contains more wildcards then the simple usecase
-        // does not apply and we need to skip to the advanced usecase
-        if (branch.contains("*")) {
-            return null;
-        }
-
-        // substitute build parameters if available
-        branch = getParameterString(branch, build);
-
-        // Check for empty string - replace with "**" when seen.
-        if (branch.equals("")) {
-            branch = "**";
-        }
-
-        return branch;
-    }
-
+   
     @Override
     public SCMRevisionState calcRevisionsFromBuild(AbstractBuild<?, ?> abstractBuild, Launcher launcher, TaskListener taskListener) throws IOException, InterruptedException {
         return SCMRevisionState.NONE;
@@ -668,7 +632,7 @@ public class GitSCM extends SCM implements Serializable {
             listener.getLogger().println("[poll] Last Built Revision: " + buildData.lastBuild.revision);
         }
 
-        final String singleBranch = getSingleBranch(lastBuild);
+        final String singleBranch =buildChooser.getSingleBranch(lastBuild,getBranches(),getRepositories());
 
         // fast remote polling needs a single branch and an existing last build
         if (this.remotePoll && singleBranch != null && buildData.lastBuild != null && buildData.lastBuild.getRevision() != null) {
@@ -970,7 +934,7 @@ public class GitSCM extends SCM implements Serializable {
 
         final Revision parentLastBuiltRev = tempParentLastBuiltRev;
 
-        final String singleBranch = environment.expand( getSingleBranch(build) );
+        final String singleBranch = environment.expand( buildChooser.getSingleBranch(build,getBranches(),getRepositories()));
 
         final RevisionParameterAction rpa = build.getAction(RevisionParameterAction.class);
         final BuildChooserContext context = new BuildChooserContextImpl(build.getProject(), build);
@@ -1357,7 +1321,7 @@ public class GitSCM extends SCM implements Serializable {
     public void buildEnvVars(AbstractBuild<?, ?> build, java.util.Map<String, String> env) {
         super.buildEnvVars(build, env);
         Revision rev = fixNull(getBuildData(build, false)).getLastBuiltRevision();
-        String singleBranch = getSingleBranch(build);
+        String singleBranch = buildChooser.getSingleBranch(build,getBranches(),getRepositories());
         if (singleBranch != null){
             env.put(GIT_BRANCH, singleBranch);
         } else if (rev != null) {
